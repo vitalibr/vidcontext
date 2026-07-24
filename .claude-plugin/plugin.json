@@ -1,0 +1,12 @@
+{
+  "name": "vidcontext",
+  "version": "0.1.0",
+  "description": "Real transcription and screenshot extraction from YouTube videos or local files, for an AI agent to read and analyze - no AI API calls inside the tool itself.",
+  "author": {
+    "name": "Mateus Vitali"
+  },
+  "homepage": "https://github.com/vitalibr/vidcontext",
+  "repository": "https://github.com/vitalibr/vidcontext",
+  "license": "MIT",
+  "keywords": ["video", "transcription", "youtube", "whisper", "screenshots", "ffmpeg"]
+}
