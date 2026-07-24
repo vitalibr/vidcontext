@@ -160,8 +160,8 @@ each with its own timestamp range:
 | Hot air rework | 17:26 | reflowing a populated drone flight-controller PCB |
 | Hot plate / reflow | 24:42 | full-board reflow with solder paste |
 
-Based on that, the agent (me, in this case) picked six timestamps across
-the three methods and ran:
+Based on that, the AI agent picked six timestamps across the three
+methods and ran:
 
 ```bash
 vidcontext screenshots "https://www.youtube.com/watch?v=skDwEgYY1UA" \
