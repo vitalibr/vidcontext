@@ -1,0 +1,15 @@
+{
+  "name": "vidcontext",
+  "owner": {
+    "name": "Mateus Vitali"
+  },
+  "description": "Real transcription and screenshot extraction from videos, for an AI agent to read and analyze.",
+  "plugins": [
+    {
+      "name": "vidcontext",
+      "source": "./",
+      "description": "Real transcription and screenshot extraction from YouTube videos or local files - calls no AI API itself.",
+      "version": "0.1.0"
+    }
+  ]
+}
