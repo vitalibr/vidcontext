@@ -23,6 +23,14 @@ def _confidence_from_logprob(avg_logprob: float | None) -> float | None:
     return max(0.0, min(1.0, 1.0 + avg_logprob))
 
 
+def _normalize_language_code(language_hint: str | None) -> str | None:
+    # Sources like yt-dlp report BCP-47 tags (e.g. "pt-BR"), but
+    # faster-whisper only accepts bare ISO 639-1 codes (e.g. "pt").
+    if language_hint is None:
+        return None
+    return language_hint.split("-")[0].lower()
+
+
 class FasterWhisperTranscriber:
     def __init__(
         self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"
@@ -49,8 +57,9 @@ class FasterWhisperTranscriber:
 
     def transcribe(self, audio_path: Path, language_hint: str | None = None) -> Transcript:
         model = self._load_model()
+        normalized_hint = _normalize_language_code(language_hint)
         try:
-            segments_iter, info = model.transcribe(str(audio_path), language=language_hint)
+            segments_iter, info = model.transcribe(str(audio_path), language=normalized_hint)
             segments = [
                 TranscriptSegment(
                     id=f"seg-{i:04d}",
@@ -67,7 +76,7 @@ class FasterWhisperTranscriber:
 
         full_text = " ".join(segment.text for segment in segments)
         return Transcript(
-            language=language_hint or info.language,
+            language=normalized_hint or info.language,
             source=TranscriptSource.LOCAL_ASR,
             segments=segments,
             full_text=full_text,
