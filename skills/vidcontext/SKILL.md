@@ -38,10 +38,23 @@ you.
      stages are cached in `runs/<source-id>/manifest.json`. Use `--force`
      to bypass the cache.
 
-2. **Decide what's interesting, yourself.**
+2. **Decide if screenshots are even worth it, then pick the moments.**
 
-   After reading the transcript, pick the timestamps (or short intervals)
-   that would benefit from a screenshot - a slide, a diagram, a code
+   Screenshots only pay off when real information lives on screen and not
+   in the speech. A rough heuristic that held up in testing: the more a
+   video is "hands-on" (repair, build, cooking, a whiteboard, on-screen
+   code or UI), the more screenshots help - they can ground vague
+   references ("this PCB", "like this"), surface details never spoken
+   (part numbers, on-screen text), and sometimes catch an ASR mistake
+   that the image contradicts. For a talking-head video with no visual
+   aids (podcast, interview, opinion piece), screenshots add close to
+   nothing beyond "yes, a person is talking" - skip that step and just
+   work from the transcript. When in doubt, look for phrases like "this",
+   "here", "like this" pointing at something unnamed in the transcript -
+   those are the moments worth capturing.
+
+   If you do want screenshots, pick the timestamps (or short intervals)
+   that show the thing being talked about - a slide, a diagram, a code
    sample on screen, a demonstrated UI action, a chart. You choose these;
    the tool has no opinion about them.
 
@@ -70,6 +83,9 @@ you.
 
 ## Notes
 
+- `yt-dlp` occasionally hits a transient `HTTP 403` from YouTube's CDN
+  mid-download. It's not a bug - just re-run the same command (add
+  `--force` if the first attempt already wrote partial state).
 - `--use-mocks` forces every provider to a fake, offline mode - useful
   only for testing `vidcontext` itself, never for a real user request.
 - If a run's artifacts are no longer needed, `vidcontext clean

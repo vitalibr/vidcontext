@@ -18,9 +18,14 @@ itself. If you are an AI coding agent working in a project that uses
    configured, add `--transcriber base` to run real speech recognition
    (faster-whisper) instead of a placeholder.
 
-2. **Decide what matters yourself** - `vidcontext` has no opinion on
-   this. Pick timestamps or short intervals worth a screenshot (a slide,
-   a diagram, an on-screen action).
+2. **Decide if screenshots are worth it, then pick the moments** -
+   `vidcontext` has no opinion on this. Heuristic: hands-on videos
+   (repair, build, cooking, code/UI on screen) benefit a lot - screenshots
+   ground vague references ("this PCB") and surface details never spoken
+   (labels, part numbers), and can catch ASR errors an image contradicts.
+   Talking-head videos (podcast, interview) gain almost nothing from
+   screenshots - skip that step. When unsure, look for "this"/"here"/"like
+   this" pointing at something unnamed in the transcript.
 
 3. **Get screenshots at those moments:**
 
@@ -37,6 +42,8 @@ itself. If you are an AI coding agent working in a project that uses
 
 ## Reference
 
+- `yt-dlp` occasionally hits a transient `HTTP 403` mid-download; just
+  re-run the command (add `--force` if needed).
 - `vidcontext providers` — lists available transcriber backends.
 - `vidcontext clean runs/<source-id> --yes` — removes a run's artifacts.
 - `--use-mocks` — forces an offline/fake run; only for testing this tool

@@ -30,9 +30,29 @@ be redundant, opaque, and would need its own API key. Instead,
 timestamps) and lets the agent's own reasoning do the analysis — fully
 inside the conversation the user is already having with it.
 
-## Install
+## Installing
+
+### Option A — as a Claude Code plugin (recommended if you use Claude Code)
+
+This repo is itself a Claude Code plugin. From inside a Claude Code
+session:
+
+```text
+/plugin marketplace add vitalibr/vidcontext
+/plugin install vidcontext@vidcontext
+/reload-plugins
+```
+
+This installs the **skill** (`skills/vidcontext/SKILL.md`) that teaches
+the agent when and how to call `vidcontext`. It does **not** install the
+Python CLI itself — you still need Option B below so the `vidcontext`
+command actually exists on disk for the agent to run.
+
+### Option B — the CLI itself (required either way)
 
 ```bash
+git clone https://github.com/vitalibr/vidcontext.git
+cd vidcontext
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
@@ -43,6 +63,22 @@ Requirements:
 
 - Python 3.12+
 - `ffmpeg` / `ffprobe` on PATH (`brew install ffmpeg` on macOS)
+
+Verify it works:
+
+```bash
+vidcontext --help
+```
+
+If `vidcontext` isn't on your PATH (e.g. you didn't activate the venv),
+use the full path instead: `./.venv/bin/vidcontext`.
+
+### Using it with any other agent (Codex, Cursor, etc.)
+
+There's no plugin system to install into — just point the agent at
+[`AGENTS.md`](AGENTS.md), which describes the same workflow in
+tool-agnostic terms. Many agents automatically read `AGENTS.md` from the
+repo root; others just need you to mention it once.
 
 ## Usage
 
@@ -78,13 +114,123 @@ completed stages, `metadata.json`, and:
 Re-running `transcript` on the same source reuses completed stages; pass
 `--force` to ignore the cache.
 
-## Using it as a Claude Code plugin / skill
+**Known quirk:** `yt-dlp` occasionally hits a transient `HTTP 403` from
+YouTube's CDN mid-download, especially on longer videos. It's not a
+`vidcontext` bug — just re-run the same command (add `--force` if the
+first attempt already wrote partial state).
 
-This repo is also a Claude Code plugin (`.claude-plugin/plugin.json`) with
-a skill at `skills/vidcontext/SKILL.md` that teaches an agent exactly how
-and when to call `vidcontext transcript` and `vidcontext screenshots`. Any
-other coding agent (Codex, etc.) can follow the same workflow described in
-[`AGENTS.md`](AGENTS.md).
+## Suggested prompts
+
+Once installed, you don't need to type `vidcontext` commands yourself —
+just ask the agent in plain language:
+
+> "Use vidcontext to get the transcript of
+> https://www.youtube.com/watch?v=... and tell me what the main points are."
+
+> "Watch this video for me (it's a repair tutorial) and pull screenshots
+> of the key steps so I can follow along without watching the whole thing."
+
+> "Summarize this YouTube video and include screenshots of anything shown
+> on screen that isn't explained in words (diagrams, code, part numbers)."
+
+The agent (with the skill/AGENTS.md loaded) handles the rest: it runs
+`vidcontext transcript`, reads the result, decides whether screenshots
+would add anything (see the worked example below for how it makes that
+call), and only then runs `vidcontext screenshots` if warranted.
+
+## Worked example: does the screenshot step actually help?
+
+This is a real run, kept as a concrete reference rather than a claim.
+Video: [*How to Solder TINY SMD Components (3 Methods That Actually
+Work)*](https://www.youtube.com/watch?v=skDwEgYY1UA) by Max Imagination —
+a hands-on tutorial, chosen specifically because it's the opposite of a
+talking-head video.
+
+```bash
+vidcontext transcript "https://www.youtube.com/watch?v=skDwEgYY1UA"
+```
+
+This one had real YouTube captions (via `youtube-transcript-api`), so no
+ASR was needed. Reading `transcript.md` surfaced three distinct methods,
+each with its own timestamp range:
+
+| Method | Starts at | What's being demonstrated |
+|---|---|---|
+| Soldering iron + wire | 00:43 | tip selection, temperature, tinning technique |
+| Hot air rework | 17:26 | reflowing a populated drone flight-controller PCB |
+| Hot plate / reflow | 24:42 | full-board reflow with solder paste |
+
+Based on that, the agent (me, in this case) picked six timestamps across
+the three methods and ran:
+
+```bash
+vidcontext screenshots "https://www.youtube.com/watch?v=skDwEgYY1UA" \
+  --at 50 --at 425 --at 1060 --at 1310 --at 1490 --at 1645
+```
+
+Three of the resulting screenshots, next to what the transcript said at
+that moment:
+
+<table>
+<tr><td width="320"><img src="docs/examples/smd-soldering/01-iron-and-tweezers.jpg" width="300"></td>
+<td>
+
+**00:50** — *"start with an adjustable temperature soldering iron... For
+IC pins, I'd go with a fine tip."*
+
+The transcript describes a category of tool ("an adjustable temperature
+iron", "a fine tip"). The frame shows the *specific* iron and ESD tweezers
+used — brand, tip shape, temperature display all visible.
+
+</td></tr>
+<tr><td><img src="docs/examples/smd-soldering/02-hot-air-drone-board.jpg" width="300"></td>
+<td>
+
+**17:41** — *"solder the top side components onto this PCB that makes up
+the flight controller for my ESP32 micro drone."*
+
+The transcript says "this PCB" — a word that means nothing without the
+image. The frame shows the actual board size relative to a hand,
+answering "how tiny is 'tiny'?" in a way no amount of text does.
+
+</td></tr>
+<tr><td><img src="docs/examples/smd-soldering/03-macro-component-detail.jpg" width="300"></td>
+<td>
+
+**~24:50** area — hot plate / component detail.
+
+This frame shows silkscreen labels and component values (`1002`, `2200`,
+`MPU9250`, a `1N4148` diode) that are **never spoken in the video at
+all**. This is information the transcript structurally cannot contain.
+
+</td></tr>
+</table>
+
+### The AI agent's take on the value added by screenshots
+
+Writing this as the agent that actually ran both steps and looked at the
+output, not as a sales pitch for the tool:
+
+The screenshots were genuinely useful here, and not in a generic "a
+picture is worth a thousand words" way — in three specific, checkable
+ways: (1) they **grounded vague spoken references** ("this PCB", "these
+parts") in an actual object and its true size; (2) they **exposed
+information that was never spoken**, like part numbers and silkscreen
+labels visible only in the image; (3) on a rougher test with a noisy
+audio track and a heavy accent, a frame caught an ASR transcription
+error red-handed — the image showed a person mid-weld while the
+transcribed text at that timestamp was gibberish, so the frame was
+strictly more trustworthy than the text at that instant.
+
+None of that generalizes to a talking-head video (a podcast, a lecture
+slide-free interview). There, a screenshot mostly reconfirms "yes, a
+person is talking," which is already implied by the transcript existing.
+**The heuristic that held up in testing:** the more of a video's
+information content lives in what's on screen rather than what's said,
+the more the `screenshots` step is worth running. A rough proxy: does the
+transcript contain phrases like "this", "here", "like this" pointing at
+something unnamed? Those are exactly the moments where a screenshot earns
+its cost.
 
 ## Configuration
 
